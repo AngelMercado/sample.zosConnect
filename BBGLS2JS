@@ -1,0 +1,125 @@
+//*********************************************************************
+//* FUNCTION : GENERATE JSON SCHEMA FROM LANGUAGE STRUCTURES          *
+//*********************************************************************
+//*
+//* Copyright IBM Corporation 2014
+//*
+//* LICENSE: Apache License
+//*          Version 2.0, January 2004
+//*          http://www.apache.org/licenses/
+//*
+//* The following code is sample code created by IBM Corporation.
+//* This sample code is not part of any standard IBM product and
+//* is provided to you solely for the purpose of assisting you in
+//* the development of your applications.  The code is provided
+//* 'as is', without warranty or condition of any kind.  IBM shall
+//* not be liable for any damages arising out of your use of the
+//* sample code, even if IBM has been advised of the possibility
+//* of such damages.
+//*
+//*********************************************************************
+//*
+//* What follows is a JCL procedure for launching a Java program running
+//* under USS. It consists of three steps:
+//*
+//*    STEP 1 :   Copy the input DD card to a tmp location on HFS
+//*
+//*    STEP 2 :   Run a java prog.
+//*
+//*    STEP 3 :   Copy the output from the java prog to the job log
+//*
+//*
+//*********************************************************************
+//*
+//BBGLS2JS PROC WLPDIR='@wlpdir@',
+// TMPDIR='/tmp',
+// TMPFILE='LS2JS'
+//*
+//* JCL TO RUN AN OE PROGRAM FROM BATCH
+//*
+//*     Note: JCL imposes a max parm length of 100 chars. The field
+//*           must be enclosed in apostrophes and must end at column 71
+//*           then must start again at column 16 on the next line with
+//*           double slashes at columns 1 and 2.
+//*
+//*
+//*************************************************
+//* STEP 1 - Copy the Java parameters to a zFS file
+//*************************************************
+//*
+//INPUT    EXEC PGM=IEBGENER
+//SYSPRINT DD DUMMY
+//*
+//* The input DSNAME specifies the input for the Java program
+//*
+//SYSUT1   DD DUMMY,DISP=SHR
+//*
+//* The output DSNAME identifies where to store the input parms on zFS
+//*
+//SYSUT2   DD PATH='&TMPDIR./&TMPFILE..in',
+// PATHOPTS=(OWRONLY,OCREAT,OTRUNC),
+// PATHMODE=SIRWXU,
+// FILEDATA=TEXT,
+// RECFM=VB,
+// LRECL=137,
+// BLKSIZE=32760
+//SYSIN    DD DUMMY
+//*
+//*
+//*******************************
+//* STEP 2 - Run the java program
+//*******************************
+//*
+//JAVAPRG1 EXEC PGM=BPXBATCH,REGION=400M,
+//  PARM='SH &WLPDIR/bin/zosConnect/bbgls2js &TMPDIR./&TMPFILE.'
+//*
+//* The STDOUT DSNAME specifies the destination to use for System.out
+//*
+//STDOUT   DD PATH='&TMPDIR./&TMPFILE..out',
+// PATHOPTS=(OWRONLY,OCREAT,OTRUNC),
+// PATHMODE=SIRWXU,
+// FILEDATA=TEXT,
+// RECFM=VB,
+// LRECL=1024,
+// BLKSIZE=32760
+//*
+//* The STDERR DSNAME specifies the destination to use for System.err
+//*
+//STDERR   DD PATH='&TMPDIR./&TMPFILE..err',
+// PATHOPTS=(OWRONLY,OCREAT,OTRUNC),
+// PATHMODE=SIRWXU,
+// FILEDATA=TEXT,
+// RECFM=VB,
+// LRECL=1024,
+// BLKSIZE=32760
+//*
+//*
+//*******************************************
+//* STEP 3 - Copy Stdout/Stderr to the joblog
+//*******************************************
+//*
+//COPYOUT  EXEC PGM=IEBGENER
+//SYSPRINT DD DUMMY
+//SYSUT1   DD PATH='&TMPDIR./&TMPFILE..out',
+// PATHDISP=DELETE,
+// PATHOPTS=(ORDONLY),
+// PATHMODE=SIRWXU,
+// FILEDATA=TEXT,
+// RECFM=VB,
+// LRECL=1024,
+// BLKSIZE=32760
+//SYSUT2   DD SYSOUT=*,DCB=(RECFM=VB,LRECL=1024,BLKSIZE=1029)
+//SYSIN    DD DUMMY
+//*
+//COPYERR  EXEC PGM=IEBGENER
+//SYSPRINT DD DUMMY
+//SYSUT1   DD PATH='&TMPDIR./&TMPFILE..err',
+// PATHDISP=DELETE,
+// PATHOPTS=(ORDONLY),
+// PATHMODE=SIRWXU,
+// FILEDATA=TEXT,
+// RECFM=VB,
+// LRECL=1024,
+// BLKSIZE=32760
+//SYSUT2   DD SYSOUT=*,DCB=(RECFM=VB,LRECL=1024,BLKSIZE=1029)
+//SYSIN    DD DUMMY
